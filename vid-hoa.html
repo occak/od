@@ -1,0 +1,605 @@
+<!--
+ TO DO:
+
+ - drag-klik?
+ - notify audio loading
+
+-->
+<!DOCTYPE html>
+<html>
+
+<head>
+  <meta charset="utf-8">
+  <title>
+    od
+  </title>
+
+  <script src="https://aframe.io/releases/0.9.2/aframe.min.js"></script>
+  <script src="/build/omnitone.min.js"></script>
+
+  <!-- <script src="cameraPosition.js"></script>
+    <script src="arrow-key-rotation.js"></script> -->
+  <!-- <script src="/Users/cem cakmak/omnitone/examples/cem-demo/js/aframe.min.js"></script> -->
+
+  <!-- <link rel="stylesheet" href="example.css"> -->
+</head>
+
+<body>
+
+
+  <a-scene>
+
+    <!-- Define camera with zero user height, movement disabled and arrow key rotation added. -->
+    <a-camera user-height="0" wasd-controls-enabled="true" wasd-rotation rotation-reader>
+      <!-- rotation-reader user-height="0" wasd-controls-enabled="true" -->
+      <!-- Text element for display messaging.  Hide once video is playing. -->
+      <a-entity id="msg" position="0 -0.3 -1.5" text="align:center; 
+                      width:3;
+                      wrapCount:100;
+                      color:red;
+                      value: Loading... Please wait;" hide-once-playing="#video" change-text>
+      </a-entity>
+
+    </a-camera>
+
+    <!-- Wait for the video to load. -->
+    <a-assets>
+      <!-- Single source video. -->
+      <video id="video" autoplay="false" loop crossorigin="anonymous" playsinline webkit-playsinline>
+        <!-- MP4 video source. -->
+        <source type="video/mp4" src="image/spherical_fall19.mp4" />
+      </video>
+    </a-assets>
+
+    <a-videosphere rotation="0 0 90" src="#video" play-on-window-click play-on-vrdisplayactivate-or-enter-vr>
+    </a-videosphere>
+
+  </a-scene>
+
+
+  <script>
+
+
+
+    // var arrayBuffer = new ArrayBuffer(16);
+    var matrix = new Float32Array(9);
+    var cameraMatrix = new Float32Array(9);
+    // var directionChange = false;
+    // var cameraEl;
+    // var rotQuaternion = new THREE.Quaternion();
+    // var rotMatrix4 = new THREE.Matrix4();
+    // var rotMatrix3 = new THREE.Matrix3();
+    var videoPlaying = false;
+    var hoaPlaying = false;
+    var audioInit = false;
+    var dragged = false;
+
+
+
+
+
+    class Omnicem {
+
+
+      // exampleInitialized = false;
+
+      // audioContext;
+      // toaRenderer;
+      // currentBufferSource;
+      // inputGain;
+      // contentBuffer;
+      // rotationMatrix3 = new Float32Array(9);
+
+      // exampleSoundPathList2 = [
+      //   'audio/dodeca_saw_bas97_inc17.wav'
+      // ];
+
+      //  loadXML() {
+      //   var xhttp = new XMLHttpRequest();
+      //   xhttp.onreadystatechange = function () {
+      //     if (this.readyState == 4 && this.status == 200) {
+      //       document.getElementsByName(exampleSoundPathList2).innerHTML =
+      //         this.responseText;
+      //     }
+      //   };
+      //   xhttp.open("GET", "audio/dodeca_saw_bas97_inc17.wav", true);
+      //   xhttp.send();
+      // }
+
+      // var exampleSoundPath = 'resources/test3oa.wav'; //zort
+
+
+
+      // onDirectionChange() {
+      //   if (!exampleInitialized && !directionChange)
+      //     return;
+
+      //   rotationMatrix3 = cameraMatrix;
+
+      //   toaRenderer.setRotationMatrix3(rotationMatrix3);
+
+      // }
+
+      startPlayback() {
+
+        this.currentBufferSource = this.audioContext.createBufferSource();
+        this.currentBufferSource.buffer = this.contentBuffer;
+        this.currentBufferSource.loop = false;
+        this.inputGain.gain.value = 0;
+        this.currentBufferSource.connect(this.inputGain);
+        this.currentBufferSource.start();
+
+        //fade in
+        this.inputGain.gain.setTargetAtTime(0.1, this.audioContext.currentTime, 0.5);
+
+        // this.inputGain.gain.value = 1.0;
+
+        // for(var i =0; i < 1000; i++) {
+        //   this.inputGain.gain.value=(i/1000);
+        //   // DelayNode
+        // }
+
+        console.log();
+
+      }
+
+      stopPlayback() {
+        this.inputGain.gain.setTargetAtTime(0, this.audioContext.currentTime, 0.5);
+        // this.currentBufferSource.stop();
+        // this.currentBufferSource.disconnect();
+      }
+
+      sayHi() {
+        console.log("Omni sez hi");
+      }
+
+      setRotMatrix3(matrix) {
+
+        if (!matrix) { return; }
+        this.toaRenderer.setRotationMatrix3(matrix);
+
+      }
+
+      constructor() {
+
+        this.exampleInitialized = false;
+
+        this.rotationMatrix3 = new Float32Array(9);
+
+        var exampleSoundPathList = [
+          'audio/3oa_example_ch0-ch7.wav',
+          'audio/3oa_example_ch8-ch15.wav'
+        ];
+
+        var exampleSoundPathList2 = [
+          'audio/test3oa_0-7.wav',
+          'audio/test3oa_8-15.wav'
+        ];
+
+        var exampleSoundPathList3 = [
+          'audio/test3oa.wav'
+        ];
+
+        var sndPathListDodeca = [
+          'audio/dodeca_saw_bas97_inc17.wav'
+        ];
+
+        var sndPathListDodeca2 = [
+          'audio/dodeca_0-7.wav',
+          'audio/dodeca_8-15.wav'
+        ];
+
+        var sndPathListSample = [
+          'audio/input_sym2_0-7.wav',
+          'audio/input_sym2_8-15.wav'
+        ];
+
+
+        this.audioContext = new AudioContext();
+        this.inputGain = this.audioContext.createGain();
+        this.toaRenderer = Omnitone.createHOARenderer(this.audioContext);
+        this.toaRenderer.setRenderingMode('ambisonic');
+
+        Promise.all([
+          Omnitone.createBufferList(this.audioContext, sndPathListSample),
+          this.toaRenderer.initialize()
+        ]).then((results) => {
+          this.contentBuffer =
+            Omnitone.mergeBufferListByChannel(this.audioContext, results[0]);
+          this.inputGain.connect(this.toaRenderer.input);
+          this.toaRenderer.output.connect(this.audioContext.destination);
+          // exampleInitialized = true;
+        });
+
+        // startPlayback;
+
+
+      }
+    }
+
+    // AFRAME.registerComponent('toggle-play-on-window-click', {
+    //   init: function () {
+    //     this.onClick = this.onClick.bind(this);
+    //   },
+    //   play: function () {
+    //     window.addEventListener('click', this.onClick);
+    //   },
+    //   pause: function () {
+    //     window.removeEventListener('click', this.onClick);
+    //   },
+    //   onClick: function (evt) {
+    //     var video = this.el.components.material.material.map.image;
+    //     if (!video) { return; }
+    //     video.paused ? video.play() : video.pause();
+    //     console.log('klik');
+    //   }
+    // });
+
+  AFRAME.registerComponent('change-text', {
+
+    init: function () {
+      var el = this.el;
+      this.ready = false;
+      el.addEventListener('textfontset', function () {
+        this.ready = true;
+      }.bind(this));
+    },
+    tick: function () {
+      var el = this.el;
+      if (!this.ready) {
+        return;
+      }
+      if (this.ready && audioInit) {
+        el.setAttribute('value', 'Ready. Click to play');
+      }
+      if (this.ready && !audioInit) {
+        el.setAttribute('value', 'Loading... Please wait');
+      }
+    }
+
+    });
+
+    AFRAME.registerComponent('play-on-window-click', {
+      init: function () {
+        this.onClick = this.onClick.bind(this);
+        // this.onMouseDown = this.mouseDown.bind(this);
+        // this.onMouseUp = this.mouseUp.bind(this);
+
+        
+
+      },
+      play: function () {
+        window.addEventListener('click', this.onClick);
+        // window.addEventListener('mousedown', this.onMouseDown);
+        // window.addEventListener('mouseup', this.onMouseUp);
+      },
+      pause: function () {
+        window.removeEventListener('click', this.onClick);
+        // window.removeEventListener('mousedown', this.onMouseDown);
+        // window.removeEventListener('mouseup', this.onMouseUp);
+      },
+      onClick: function (evt) {
+        console.log("klik");
+        if (audioInit) {
+          console.log("girdi");
+          var video = this.el.components.material.material.map.image;
+          if (!video) { return; }
+          if (video.paused) {
+            video.play();
+            videoPlaying = true;
+          }
+          else {
+            video.pause();
+            videoPlaying = false;
+          }
+        }
+      },
+
+      onMouseDown: function (evt) {
+
+      //get rotMatrix from quaternion
+      
+      // var worldQuaternion = new THREE.Quaternion();
+      // var worldMatrix = new THREE.Euler();
+      // var camera = THREE.PerspectiveCamera();
+      // caemra.getWorldQuaternion(worldQuaternion);
+      // worldMatrix.setFromQuaternion(worldQuaternion);
+
+
+      //   console.log('klik');
+      //   if (audioInit) {
+      //     console.log("girdi");
+      //     var video = this.el.components.material.material.map.image;
+      //     if (!video) { return; }
+      //     if (video.paused) {
+      //       video.play();
+      //       videoPlaying = true;
+      //     }
+      //     else {
+      //       video.pause();
+      //       videoPlaying = false;
+      //     }
+      //   }
+      // },
+      // onMouseUp: function (evt) {
+
+      //   //compare rotation matrices
+
+      //   console.log(worldMatrix);
+
+      },
+      
+      
+
+    });
+
+    AFRAME.registerComponent('play-on-vrdisplayactivate-or-enter-vr', {
+      init: function () {
+        this.playVideo = this.playVideo.bind(this);
+        this.playVideoNextTick = this.playVideoNextTick.bind(this);
+      },
+      play: function () {
+        window.addEventListener('vrdisplayactivate', this.playVideo);
+        this.el.sceneEl.addEventListener('enter-vr', this.playVideoNextTick);
+      },
+      pause: function () {
+        this.el.sceneEl.removeEventListener('enter-vr', this.playVideoNextTick);
+        window.removeEventListener('vrdisplayactivate', this.playVideo);
+      },
+      playVideoNextTick: function () {
+        setTimeout(this.playVideo);
+      },
+      playVideo: function () {
+        var video = this.el.components.material.material.map.image;
+        if (!video) { return; }
+        video.play();
+      }
+    });
+
+    AFRAME.registerComponent('wasd-rotation', {
+      schema: {
+        enabled: { default: true },
+        keyUp: {default: false},
+        dx: { default: 0.0075 },
+        dy: { default: 0.0075 },
+        dz: { default: 0.0075 },
+      },
+      init: function () {
+        this.onKeyDown = this.onKeyDown.bind(this);
+        this.onKeyUp = this.onKeyUp.bind(this);
+        this.directionX = 0;
+        this.directionY = 0;
+        this.directionZ = 0;
+        this.rotationX = 0;
+        this.rotationY = 0;
+        this.rotationZ = 0;
+      },
+      play: function () {
+        window.addEventListener('keydown', this.onKeyDown);
+        window.addEventListener('keyup', this.onKeyUp);
+      },
+      pause: function () {
+        window.removeEventListener('keydown', this.onKeyDown);
+        window.removeEventListener('keyup', this.onKeyUp);
+      },
+      onKeyDown: function (evt) {
+
+        if(this.data.keyUp) {
+          this.data.keyUp = false;
+          this.data.dx = 0.007;
+          this.data.dy = 0.007;
+          this.data.dz = 0.007;
+          }
+
+        switch (evt.keyCode) {
+          case 87: this.directionX = 1; break; //w
+          case 65: this.directionY = 1; break; //a
+          case 83: this.directionX = -1; break; //s
+          case 68: this.directionY = -1; break; //d
+          case 69: this.directionZ = 1; break; //e
+          case 81: this.directionZ = -1; break; //q
+        }
+
+
+      },
+      onKeyUp: function (evt) {
+
+        this.data.keyUp = true;
+
+        // switch (evt.keyCode) {
+        //   case 65: this.directionY = 0; break; //a
+        //   case 87: this.directionX = 0; break; //w
+        //   case 68: this.directionY = 0; break; //d
+        //   case 83: this.directionX = 0; break; //s
+        //   case 69: this.directionZ = 0; break; //e
+        //   case 81: this.directionZ = 0; break; //q
+        // }
+
+      },
+      // onKeyDown: function (evt) {
+      //   switch (evt.keyCode) {
+      //     case 37: this.directionX = 1; break;
+      //     case 38: this.directionY = 1; break;
+      //     case 39: this.directionX = -1; break;
+      //     case 40: this.directionY = -1; break;
+      //   }
+      // },
+      // onKeyUp: function (evt) {
+      //   switch (evt.keyCode) {
+      //     case 37: this.directionX = 0; break;
+      //     case 38: this.directionY = 0; break;
+      //     case 39: this.directionX = 0; break;
+      //     case 40: this.directionY = 0; break;
+      //   }
+      // },
+      tick: function (t, dt) {
+        if (!this.data.enabled) { return; }
+        var rotation = this.el.object3D.rotation;
+
+
+        if (!this.data.keyUp) { 
+          
+          this.rotationX += this.data.dx * this.directionX;
+          rotation.x = this.rotationX;
+
+          this.rotationY += this.data.dy * this.directionY;
+          rotation.y = this.rotationY;
+          
+          this.rotationZ  += this.data.dy * this.directionZ;
+          rotation.z = this.rotationZ;
+
+        }
+        
+        //drag camera after key release
+        if(this.data.keyUp) {
+
+          this.data.dx = 0.95*this.data.dx;
+          this.data.dy = 0.95*this.data.dy;
+          this.data.dz = 0.95*this.data.dz;
+
+          this.rotationX += this.data.dx * this.directionX;
+          rotation.x = this.rotationX;
+
+          this.rotationY += this.data.dy * this.directionY;
+          rotation.y = this.rotationY;
+          
+          this.rotationZ  += this.data.dy * this.directionZ;
+          rotation.z = this.rotationZ;
+
+          if(this.data.dx <= Math.pow(Math.E, -6.5) 
+             && this.data.dx <= Math.pow(Math.E, -6.5) 
+             && this.data.dx <= Math.pow(Math.E, -6.5)){
+            
+            this.data.keyUp = false;
+
+            this.directionX = 0;
+            this.directionY = 0;
+            this.directionZ = 0;
+
+            this.data.dx = 0.007;
+            this.data.dy = 0.007;
+            this.data.dz = 0.007;
+
+            console.log("end drag");
+          
+          }
+
+        }
+
+          // console.log(rotation.x, this.data.dx, this.directionY);
+  
+      }
+    });
+
+    AFRAME.registerComponent('hide-once-playing', {
+      schema: { type: 'selector' },
+      init: function () {
+        this.onPlaying = this.onPlaying.bind(this);
+        this.onPause = this.onPause.bind(this);
+        
+      },
+      play: function () {
+        if (this.data) {
+          this.data.addEventListener('playing', this.onPlaying);
+          this.data.addEventListener('pause', this.onPause);
+        }
+      },
+      pause: function () {
+        if (this.data) {
+          this.data.removeEventListener('playing', this.onPlaying);
+          this.data.removeEventListener('pause', this.onPause);
+        }
+      },
+      onPlaying: function (evt) {
+        this.el.setAttribute('visible', false);
+      },
+      onPause: function (evt) {
+        this.el.setAttribute('visible', true);
+      }
+    });
+
+    AFRAME.registerComponent('rotation-reader', {
+      /**
+       * We use IIFE (immediately-invoked function expression) to only allocate one
+       * vector or euler and not re-create on every tick to save memory.
+       */
+
+      init: function () {
+
+        var self = this;
+        this.omnicem = new Omnicem();
+        this.omnicem.sayHi();
+      },
+
+      onMouseDrag: function(evt){
+        console.log("girdi");
+      },
+
+      tick: function () {
+
+        // if (cameraEl == null) cameraEl = document.querySelector('#camera');
+
+        // var position = new THREE.Vector3();
+
+
+        if (videoPlaying && hoaPlaying) {
+
+
+          // var rotMatrix3Uint8 = new Uint8Array(arrayBuffer);
+
+          var rotQuaternion = new THREE.Quaternion();
+          var rotMatrix4 = new THREE.Matrix4();
+          var rotMatrix3 = new THREE.Matrix3();
+          var rotArray = new Array(9);
+
+          
+
+          rotQauternion = this.el.object3D.getWorldQuaternion(rotQuaternion);
+          if (!rotQuaternion) { return; }
+
+          rotMatrix4.makeRotationFromQuaternion(rotQuaternion);
+          rotMatrix3.setFromMatrix4(rotMatrix4);
+          rotMatrix3.toArray(rotArray);
+
+          for (var i = 0; i < rotArray.length; i++) {
+            cameraMatrix[i] = rotArray[i];
+          }
+
+
+          dragged = true;
+          // console.log(rotMatrix3);
+          // console.log(rotArray);
+          // console.log(cameraMatrix);
+        }
+
+        if (videoPlaying && !hoaPlaying) {
+          this.omnicem.startPlayback();
+          hoaPlaying = !hoaPlaying;
+        }
+
+        if (!videoPlaying && hoaPlaying) {
+          this.omnicem.stopPlayback();
+          hoaPlaying = !hoaPlaying;
+        }
+
+        if (this.omnicem.contentBuffer == null && audioInit) audioInit = false;
+        if (this.omnicem.contentBuffer != null && !audioInit) audioInit = true;
+
+
+
+      }
+    });
+  </script>
+
+ 
+
+
+
+
+
+  <!--GET CAMERA LOCATIONS-->
+
+
+</body>
+
+</html>
